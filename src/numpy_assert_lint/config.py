@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -39,10 +41,12 @@ def load_config(path: Path) -> Config:
         raise ConfigError(str(error)) from error
     tool_table = document.get("tool", {})
     if not isinstance(tool_table, dict):
-        raise ConfigError("tool must be a table")
+        message = "tool must be a table"
+        raise ConfigError(message)
     table = tool_table.get("numpy-assert-lint", {})
     if not isinstance(table, dict):
-        raise ConfigError("tool.numpy-assert-lint must be a table")
+        message = "tool.numpy-assert-lint must be a table"
+        raise ConfigError(message)
     return Config(
         select=_read_selectors(table.get("select"), name="select", default=DEFAULT_SELECT),
         ignore=_read_selectors(table.get("ignore"), name="ignore", default=()),
@@ -53,5 +57,6 @@ def _read_selectors(value: object, *, name: str, default: tuple[str, ...]) -> tu
     if value is None:
         return default
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
-        raise ConfigError(f"{name} must be an array of strings")
+        message = f"{name} must be an array of strings"
+        raise ConfigError(message)
     return tuple(item.upper() for item in value)
