@@ -20,10 +20,10 @@ uv run pre-commit validate-manifest
 uv run python -m build
 ```
 
-Add a focused test for each new behavior. The test should exercise `check_source()` or the CLI, fail before the implementation change, and pass after the smallest corresponding code change.
+Add a focused test for each new behavior. The test should exercise `check_source()`, `fix_source()`, or the CLI, fail before the implementation change, and pass after the smallest corresponding code change.
 
 ## Add or change a rule
 
 Keep default rules limited to patterns that identify NumPy calls directly. A rule that relies on an inferred array type should be opt-in unless the checker can avoid false positives without importing or executing user code.
 
-Do not add an automatic fix when the replacement changes tolerances, NaN handling, broadcasting, shape checks, or dtype checks.
+Keep default fixes conservative. Preserve explicit tolerances and NaN options, and add a regression test for comments and multiline layout when a transformation changes call arguments. A fix that can change broadcasting, NaN handling, expression evaluation, or the accepted array library must require `--unsafe-fixes`.

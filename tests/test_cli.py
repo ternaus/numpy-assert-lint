@@ -94,7 +94,7 @@ def test_cli_reports_version(capsys: pytest.CaptureFixture[str]) -> None:
         main(["--version"])
 
     assert raised.value.code == 0
-    assert capsys.readouterr().out == "numpy-assert-lint 0.1.0\n"
+    assert capsys.readouterr().out == "numpy-assert-lint 0.2.0\n"
 
 
 def test_cli_does_not_enable_ambiguous_method_rule_by_default(
@@ -230,9 +230,92 @@ def test_cli_reports_file_read_errors(
     def raise_read_error(_path: Path) -> None:
         raise OSError("permission denied")
 
-    monkeypatch.setattr("numpy_assert_lint.cli.tokenize.open", raise_read_error)
+    monkeypatch.setattr("numpy_assert_lint.cli._read_source", raise_read_error)
 
     exit_code = main([str(test_file)])
 
     assert exit_code == 2
     assert capsys.readouterr().err == f"{test_file}: NAL903 Could not read file: permission denied\n"
+
+
+def test_cli_fix_rewrites_safe_violations(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    test_file = tmp_path / "test_arrays.py"
+    test_file.write_text("import numpy as np\nassert np.all(actual == 0)\n", encoding="utf-8")
+
+    exit_code = main(["--fix", str(test_file)])
+
+    assert exit_code == 1
+    assert test_file.read_text(encoding="utf-8") == ("import numpy as np\nnp.testing.assert_array_equal(actual, 0)\n")
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == f"{test_file}: Fixed 1 violation.\n"
+
+
+def test_cli_reuses_checker_diagnostics_for_fixes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    test_file = tmp_path / "test_arrays.py"
+    test_file.write_text("import numpy as np\nassert np.all(actual == 0)\n", encoding="utf-8")
+
+    def fail_if_rechecked(_source: str, *, filename: str) -> None:
+        pytest.fail(f"fixer rechecked diagnostics for {filename}")
+
+    monkeypatch.setattr("numpy_assert_lint.fixer.check_source", fail_if_rechecked)
+
+    exit_code = main(["--fix", str(test_file)])
+
+    assert exit_code == 1
+
+
+def test_cli_can_apply_unsafe_fixes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    test_file = tmp_path / "test_arrays.py"
+    test_file.write_text("import numpy as np\nassert np.array_equal(actual, expected)\n", encoding="utf-8")
+
+    exit_code = main(["--fix", "--unsafe-fixes", str(test_file)])
+
+    assert exit_code == 1
+    assert test_file.read_text(encoding="utf-8") == (
+        "import numpy as np\nnp.testing.assert_array_equal(actual, expected)\n"
+    )
+    assert capsys.readouterr().err == f"{test_file}: Fixed 1 violation.\n"
+
+
+def test_cli_diff_prints_patch_without_changing_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    test_file = tmp_path / "test_arrays.py"
+    source = "import numpy as np\nassert np.all(actual == 0)\n"
+    test_file.write_text(source, encoding="utf-8")
+
+    exit_code = main(["--diff", str(test_file)])
+
+    assert exit_code == 1
+    assert test_file.read_text(encoding="utf-8") == source
+    assert capsys.readouterr().out == (
+        f"--- {test_file}:before\n"
+        f"+++ {test_file}:after\n"
+        "@@ -1,2 +1,2 @@\n"
+        " import numpy as np\n"
+        "-assert np.all(actual == 0)\n"
+        "+np.testing.assert_array_equal(actual, 0)\n"
+    )
+
+
+def test_cli_fix_preserves_source_encoding_and_crlf(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    test_file = tmp_path / "test_latin1.py"
+    test_file.write_bytes(b"# coding: latin-1\r\nimport numpy as np\r\nassert np.all(actual == 0)\r\n# caf\xe9\r\n")
+
+    exit_code = main(["--fix", str(test_file)])
+
+    assert exit_code == 1
+    assert test_file.read_bytes() == (
+        b"# coding: latin-1\r\nimport numpy as np\r\nnp.testing.assert_array_equal(actual, 0)\r\n# caf\xe9\r\n"
+    )
+    assert capsys.readouterr().err == f"{test_file}: Fixed 1 violation.\n"
+
+
+def test_cli_rejects_unsafe_fixes_without_an_output_mode(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as raised:
+        main(["--unsafe-fixes"])
+
+    assert raised.value.code == 2
+    assert "--unsafe-fixes requires --fix or --diff" in capsys.readouterr().err

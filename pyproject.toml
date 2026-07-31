@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "numpy-assert-lint"
-version = "0.1.0"
-description = "Lint NumPy assertions and prefer diagnostic numpy.testing helpers."
+version = "0.2.0"
+description = "Lint and fix NumPy assertions to prefer diagnostic numpy.testing helpers."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -27,6 +27,7 @@ classifiers = [
     "Topic :: Software Development :: Testing",
 ]
 dependencies = [
+    "libcst>=1.8.6,<2",
     "tomli>=2.0.1; python_version < '3.11'",
 ]
 
