@@ -5,3 +5,11 @@
   language: python
   types: [python]
   stages: [pre-commit, pre-merge-commit, pre-push, manual]
+
+- id: numpy-assert-lint-fix
+  name: numpy-assert-lint (fix)
+  description: Apply conservative fixes for NumPy assertions that lose useful failure diagnostics.
+  entry: numpy-assert-lint --fix
+  language: python
+  types: [python]
+  stages: [pre-commit, pre-merge-commit, pre-push, manual]

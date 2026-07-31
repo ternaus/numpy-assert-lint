@@ -4,7 +4,7 @@
 [![Python 3.10–3.14](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-`numpy-assert-lint` finds NumPy comparisons that lose useful failure diagnostics inside plain `assert` statements. It runs as a pre-commit hook or standalone CLI and does not import NumPy or execute checked code.
+`numpy-assert-lint` finds NumPy comparisons that lose useful failure diagnostics inside plain `assert` statements. It can report them or rewrite conservative cases to `numpy.testing` assertions. The tool runs as a pre-commit hook or standalone CLI and does not import NumPy or execute checked code.
 
 ```python
 # Reported as NAL001
@@ -27,7 +27,7 @@ Add the repository to `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/Ternaus/numpy-assert-lint
-    rev: v0.1.0
+    rev: v0.2.0
     hooks:
       - id: numpy-assert-lint
         files: ^tests/
@@ -40,6 +40,19 @@ pre-commit run numpy-assert-lint --all-files
 ```
 
 Pre-commit installs the checker in an isolated environment. The checked repository does not need to list `numpy-assert-lint` as a dependency.
+
+To apply conservative fixes during pre-commit instead, use the fixer hook:
+
+```yaml
+repos:
+  - repo: https://github.com/Ternaus/numpy-assert-lint
+    rev: v0.2.0
+    hooks:
+      - id: numpy-assert-lint-fix
+        files: ^tests/
+```
+
+The fixer hook exits with code `1` after modifying files so that pre-commit shows the patch. Stage the changes and run it again. Remaining diagnostics still require review.
 
 ## Rules
 
@@ -65,15 +78,42 @@ from numpy import allclose as arrays_close
 
 It also tracks basic shadowing by assignments, function parameters, functions, and classes.
 
-## Review every replacement
+## Preview and apply fixes
 
-The checker reports diagnostics without rewriting code. NumPy's comparison functions and testing assertions have different defaults:
+Preview the conservative fixes as a unified diff:
+
+```bash
+numpy-assert-lint --diff tests/
+```
+
+Apply them in place:
+
+```bash
+numpy-assert-lint --fix tests/
+```
+
+Both commands return exit code `1` when they find changes. The fixer uses LibCST to retain comments, formatting, source encoding, and line endings. It is idempotent: a second run does not change already converted assertions.
+
+Default fixes cover scalar comparisons and `allclose` calls whose operands are a literal scalar and an array, plus `allclose` calls that compare the same bound name. Explicit `rtol`, `atol`, and `equal_nan` values are preserved; omitted values are materialized with the `np.allclose` defaults. Literal assertion messages become `err_msg`.
+
+Array-to-array replacements need an explicit opt-in because NumPy's boolean helpers and testing assertions do not have identical semantics:
+
+```bash
+numpy-assert-lint --diff --unsafe-fixes tests/
+numpy-assert-lint --fix --unsafe-fixes tests/
+```
+
+Unsafe mode enables `NAL002`, `NAL005`, array-to-array fixes for the other rules, and messages or comparison options that the conservative fixer cannot prove safe. Direct function imports such as `from numpy import allclose` are reported but not rewritten because the fixer will not invent a module alias.
+
+## Review semantic differences
+
+NumPy's comparison functions and testing assertions have different defaults:
 
 - [`np.allclose`](https://numpy.org/doc/stable/reference/generated/numpy.allclose.html) defaults to `rtol=1e-5`, `atol=1e-8`, and `equal_nan=False`. It uses broadcasting.
 - [`np.testing.assert_allclose`](https://numpy.org/doc/stable/reference/generated/numpy.testing.assert_allclose.html) defaults to `rtol=1e-7`, `atol=0`, and `equal_nan=True`. It rejects broadcasting between non-scalar operands.
 - [`np.array_equal`](https://numpy.org/doc/stable/reference/generated/numpy.array_equal.html) defaults to `equal_nan=False`, while [`np.testing.assert_array_equal`](https://numpy.org/doc/stable/reference/generated/numpy.testing.assert_array_equal.html) treats NaNs at the same positions as equal.
 
-A mechanical replacement could change whether a test passes. Choose tolerances, NaN handling, shape checks, and dtype checks from the contract under test.
+A mechanical replacement could change whether a test passes. Choose tolerances, NaN handling, shape checks, and dtype checks from the contract under test. Also note that plain `assert` statements disappear under `python -O`, while `np.testing` calls remain active; the fixer is intended for test code that runs without optimization.
 
 ## Configure enabled rules
 
@@ -123,7 +163,7 @@ external = ["NAL"]
 Install the tagged GitHub release with `uv`:
 
 ```bash
-uv tool install "git+https://github.com/Ternaus/numpy-assert-lint@v0.1.0"
+uv tool install "git+https://github.com/Ternaus/numpy-assert-lint@v0.2.0"
 numpy-assert-lint tests/
 ```
 

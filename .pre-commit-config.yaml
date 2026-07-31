@@ -24,6 +24,7 @@ repos:
         language: python
         pass_filenames: false
         additional_dependencies:
+          - "libcst>=1.8.6,<2"
           - "mypy>=1.15,<2"
           - "pytest>=8.3,<9"
           - "tomli>=2.0.1"
@@ -43,5 +44,6 @@ repos:
         pass_filenames: false
         stages: [pre-push, manual]
         additional_dependencies:
+          - "libcst>=1.8.6,<2"
           - "pytest>=8.3,<9"
           - "pytest-cov>=6.0,<8"
