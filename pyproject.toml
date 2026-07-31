@@ -32,14 +32,14 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "pytest>=8.3,<9",
+    "pytest>=8.3,<10",
     "pytest-cov>=6.0,<8",
 ]
 dev = [
     "build>=1.2,<2",
     "mypy>=1.15,<2",
     "pre-commit>=4.0,<5",
-    "pytest>=8.3,<9",
+    "pytest>=8.3,<10",
     "pytest-cov>=6.0,<8",
     "ruff>=0.15,<0.17",
     "tomli>=2.0.1",
