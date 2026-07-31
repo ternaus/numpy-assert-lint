@@ -184,14 +184,17 @@ def fix_source(
 
 
 def _fix_numpy_all_equality(node: cst.Assert, *, allow_unsafe: bool) -> cst.Expr | None:
-    if not isinstance(node.test, cst.Call):
+    if not isinstance(node.test, cst.Call) or (
+        node.msg is not None and not allow_unsafe and not isinstance(node.msg, cst.SimpleString)
+    ):
         return None  # pragma: no cover - guaranteed by the matching diagnostic
-    if node.msg is not None and not allow_unsafe and not isinstance(node.msg, cst.SimpleString):
-        return None
     call = node.test
-    if len(call.args) != 1 or not isinstance(call.func, cst.Attribute) or call.func.attr.value != "all":
-        return None
-    if not isinstance(call.func.value, cst.Name):
+    if (
+        len(call.args) != 1
+        or not isinstance(call.func, cst.Attribute)
+        or call.func.attr.value != "all"
+        or not isinstance(call.func.value, cst.Name)
+    ):
         return None  # pragma: no cover - qualified names have a Name root
     comparison = call.args[0].value
     if not isinstance(comparison, cst.Comparison) or len(comparison.comparisons) != 1:

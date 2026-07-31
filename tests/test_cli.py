@@ -1,8 +1,12 @@
+"""Tests for the command-line interface."""
+
 from pathlib import Path
 
 import pytest
 
 from numpy_assert_lint.cli import main
+
+_ERROR_EXIT_CODE = 2
 
 
 def test_cli_prints_diagnostics_and_fails(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -41,7 +45,7 @@ def test_cli_reports_syntax_errors(tmp_path: Path, capsys: pytest.CaptureFixture
 
     exit_code = main([str(test_file)])
 
-    assert exit_code == 2
+    assert exit_code == _ERROR_EXIT_CODE
     assert f"{test_file}:1:8: NAL900 SyntaxError:" in capsys.readouterr().err
 
 
@@ -123,7 +127,7 @@ def test_cli_reports_invalid_configuration(
 
     exit_code = main([])
 
-    assert exit_code == 2
+    assert exit_code == _ERROR_EXIT_CODE
     assert capsys.readouterr().err == (
         "pyproject.toml: NAL901 Invalid configuration: select must be an array of strings\n"
     )
@@ -142,7 +146,7 @@ def test_cli_reports_non_table_configuration(
 
     exit_code = main([])
 
-    assert exit_code == 2
+    assert exit_code == _ERROR_EXIT_CODE
     assert capsys.readouterr().err == (
         "pyproject.toml: NAL901 Invalid configuration: tool.numpy-assert-lint must be a table\n"
     )
@@ -158,7 +162,7 @@ def test_cli_reports_non_table_tool_section(
 
     exit_code = main([])
 
-    assert exit_code == 2
+    assert exit_code == _ERROR_EXIT_CODE
     assert capsys.readouterr().err == ("pyproject.toml: NAL901 Invalid configuration: tool must be a table\n")
 
 
@@ -172,7 +176,7 @@ def test_cli_reports_invalid_toml(
 
     exit_code = main([])
 
-    assert exit_code == 2
+    assert exit_code == _ERROR_EXIT_CODE
     assert "pyproject.toml: NAL901 Invalid configuration:" in capsys.readouterr().err
 
 
@@ -181,7 +185,7 @@ def test_cli_reports_missing_input(tmp_path: Path, capsys: pytest.CaptureFixture
 
     exit_code = main([str(missing_file)])
 
-    assert exit_code == 2
+    assert exit_code == _ERROR_EXIT_CODE
     assert capsys.readouterr().err == f"{missing_file}: NAL902 File not found\n"
 
 
@@ -205,7 +209,7 @@ def test_cli_reports_missing_explicit_config(tmp_path: Path, capsys: pytest.Capt
 
     exit_code = main(["--config", str(missing_config), str(test_file)])
 
-    assert exit_code == 2
+    assert exit_code == _ERROR_EXIT_CODE
     assert capsys.readouterr().err == f"{missing_config}: NAL901 Configuration file not found\n"
 
 
@@ -215,7 +219,7 @@ def test_cli_reports_source_encoding_errors(tmp_path: Path, capsys: pytest.Captu
 
     exit_code = main([str(test_file)])
 
-    assert exit_code == 2
+    assert exit_code == _ERROR_EXIT_CODE
     assert capsys.readouterr().err == f"{test_file}: NAL903 Could not read file: invalid or missing encoding\n"
 
 
@@ -228,13 +232,14 @@ def test_cli_reports_file_read_errors(
     test_file.write_text("assert True\n", encoding="utf-8")
 
     def raise_read_error(_path: Path) -> None:
-        raise OSError("permission denied")
+        message = "permission denied"
+        raise OSError(message)
 
     monkeypatch.setattr("numpy_assert_lint.cli._read_source", raise_read_error)
 
     exit_code = main([str(test_file)])
 
-    assert exit_code == 2
+    assert exit_code == _ERROR_EXIT_CODE
     assert capsys.readouterr().err == f"{test_file}: NAL903 Could not read file: permission denied\n"
 
 
@@ -266,6 +271,23 @@ def test_cli_reuses_checker_diagnostics_for_fixes(
     exit_code = main(["--fix", str(test_file)])
 
     assert exit_code == 1
+
+
+def test_cli_fix_reports_violations_without_safe_fixes(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    test_file = tmp_path / "test_arrays.py"
+    source = "import numpy as np\nassert np.array_equal(actual, expected)\n"
+    test_file.write_text(source, encoding="utf-8")
+
+    exit_code = main(["--fix", str(test_file)])
+
+    assert exit_code == 1
+    assert test_file.read_text(encoding="utf-8") == source
+    captured = capsys.readouterr()
+    assert captured.out == (f"{test_file}:2:1: NAL002 Prefer np.testing.assert_array_equal() for diagnostic output.\n")
+    assert captured.err == ""
 
 
 def test_cli_can_apply_unsafe_fixes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -317,5 +339,5 @@ def test_cli_rejects_unsafe_fixes_without_an_output_mode(capsys: pytest.CaptureF
     with pytest.raises(SystemExit) as raised:
         main(["--unsafe-fixes"])
 
-    assert raised.value.code == 2
+    assert raised.value.code == _ERROR_EXIT_CODE
     assert "--unsafe-fixes requires --fix or --diff" in capsys.readouterr().err

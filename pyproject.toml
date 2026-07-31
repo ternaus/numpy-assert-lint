@@ -87,9 +87,8 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"src/numpy_assert_lint/cli.py" = ["C901", "PLR0912", "PLR0915"]
-"src/numpy_assert_lint/fixer.py" = ["N802", "PLR0911"]
-"tests/**/*.py" = ["D", "EM101", "INP001", "PLR2004", "S101", "TRY003"]
+"src/numpy_assert_lint/fixer.py" = ["N802"]
+"tests/**/*.py" = ["D103", "S101"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["numpy_assert_lint"]
