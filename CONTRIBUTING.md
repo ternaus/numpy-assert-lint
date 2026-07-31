@@ -20,6 +20,8 @@ uv run pre-commit validate-manifest
 uv run python -m build
 ```
 
+Keep Ruff's maintainability rules enabled. When Ruff reports excessive complexity, branches, statements, arguments, or returns, refactor the code instead of adding `ignore`, `per-file-ignores`, or `noqa`. Reserve narrow, documented exceptions for tool conflicts and framework conventions such as pytest assertions or LibCST callback names.
+
 Add a focused test for each new behavior. The test should exercise `check_source()`, `fix_source()`, or the CLI, fail before the implementation change, and pass after the smallest corresponding code change.
 
 ## Add or change a rule

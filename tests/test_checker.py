@@ -1,3 +1,5 @@
+"""Tests for NumPy assertion diagnostics."""
+
 import pytest
 
 from numpy_assert_lint.checker import check_source

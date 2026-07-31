@@ -1,3 +1,5 @@
+"""Tests for NumPy assertion fixes."""
+
 import pytest
 
 from numpy_assert_lint.fixer import fix_source
