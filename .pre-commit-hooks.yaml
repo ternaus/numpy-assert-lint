@@ -1,0 +1,7 @@
+- id: numpy-assert-lint
+  name: numpy-assert-lint
+  description: Find NumPy comparisons that lose useful failure diagnostics inside plain assert statements.
+  entry: numpy-assert-lint
+  language: python
+  types: [python]
+  stages: [pre-commit, pre-merge-commit, pre-push, manual]

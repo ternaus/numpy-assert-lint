@@ -1,0 +1,47 @@
+minimum_pre_commit_version: "4.0.0"
+default_install_hook_types: [pre-commit, pre-push]
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check --fix
+        language: python
+        types_or: [python, pyi]
+        additional_dependencies: ["ruff>=0.15,<0.17"]
+
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
+        language: python
+        types_or: [python, pyi]
+        additional_dependencies: ["ruff>=0.15,<0.17"]
+
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: python
+        pass_filenames: false
+        additional_dependencies:
+          - "mypy>=1.15,<2"
+          - "pytest>=8.3,<9"
+          - "tomli>=2.0.1"
+
+      - id: validate-pre-commit-manifest
+        name: validate pre-commit manifest
+        entry: pre-commit validate-manifest
+        language: python
+        files: ^\.pre-commit-hooks\.yaml$
+        pass_filenames: false
+        additional_dependencies: ["pre-commit>=4.0,<5"]
+
+      - id: pytest
+        name: pytest
+        entry: pytest --cov=numpy_assert_lint --cov-report=term-missing
+        language: python
+        pass_filenames: false
+        stages: [pre-push, manual]
+        additional_dependencies:
+          - "pytest>=8.3,<9"
+          - "pytest-cov>=6.0,<8"
