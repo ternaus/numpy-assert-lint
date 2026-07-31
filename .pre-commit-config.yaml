@@ -9,14 +9,14 @@ repos:
         entry: ruff check --fix
         language: python
         types_or: [python, pyi]
-        additional_dependencies: ["ruff>=0.15,<0.17"]
+        additional_dependencies: ["ruff>=0.15"]
 
       - id: ruff-format
         name: ruff format
         entry: ruff format
         language: python
         types_or: [python, pyi]
-        additional_dependencies: ["ruff>=0.15,<0.17"]
+        additional_dependencies: ["ruff>=0.15"]
 
       - id: mypy
         name: mypy
@@ -24,9 +24,9 @@ repos:
         language: python
         pass_filenames: false
         additional_dependencies:
-          - "libcst>=1.8.6,<2"
-          - "mypy>=1.15,<2"
-          - "pytest>=8.3,<9"
+          - "libcst>=1.8.6"
+          - "mypy>=1.15"
+          - "pytest>=8.3"
           - "tomli>=2.0.1"
 
       - id: validate-pre-commit-manifest
@@ -35,7 +35,7 @@ repos:
         language: python
         files: ^\.pre-commit-hooks\.yaml$
         pass_filenames: false
-        additional_dependencies: ["pre-commit>=4.0,<5"]
+        additional_dependencies: ["pre-commit>=4.0"]
 
       - id: pytest
         name: pytest
@@ -44,6 +44,6 @@ repos:
         pass_filenames: false
         stages: [pre-push, manual]
         additional_dependencies:
-          - "libcst>=1.8.6,<2"
-          - "pytest>=8.3,<9"
-          - "pytest-cov>=6.0,<8"
+          - "libcst>=1.8.6"
+          - "pytest>=8.3"
+          - "pytest-cov>=6.0"
