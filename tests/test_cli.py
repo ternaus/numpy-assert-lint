@@ -251,6 +251,23 @@ def test_cli_fix_rewrites_safe_violations(tmp_path: Path, capsys: pytest.Capture
     assert captured.err == f"{test_file}: Fixed 1 violation.\n"
 
 
+def test_cli_reuses_checker_diagnostics_for_fixes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    test_file = tmp_path / "test_arrays.py"
+    test_file.write_text("import numpy as np\nassert np.all(actual == 0)\n", encoding="utf-8")
+
+    def fail_if_rechecked(_source: str, *, filename: str) -> None:
+        pytest.fail(f"fixer rechecked diagnostics for {filename}")
+
+    monkeypatch.setattr("numpy_assert_lint.fixer.check_source", fail_if_rechecked)
+
+    exit_code = main(["--fix", str(test_file)])
+
+    assert exit_code == 1
+
+
 def test_cli_can_apply_unsafe_fixes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     test_file = tmp_path / "test_arrays.py"
     test_file.write_text("import numpy as np\nassert np.array_equal(actual, expected)\n", encoding="utf-8")

@@ -158,16 +158,17 @@ def fix_source(
     filename: str = "<unknown>",
     allow_unsafe: bool = False,
     enabled_codes: Collection[str] | None = None,
+    diagnostics: Collection[Diagnostic] | None = None,
 ) -> FixResult:
     """Apply selected NumPy assertion fixes to source text."""
-    diagnostics = check_source(source, filename=filename)
+    selected_diagnostics = list(diagnostics) if diagnostics is not None else check_source(source, filename=filename)
     if enabled_codes is not None:
-        diagnostics = [item for item in diagnostics if item.code in enabled_codes]
+        selected_diagnostics = [item for item in selected_diagnostics if item.code in enabled_codes]
     alias_visitor = _NumpyAliasVisitor()
     alias_visitor.visit(ast.parse(source, filename=filename))
     wrapper = MetadataWrapper(cst.parse_module(source))
     transformer = _FixTransformer(
-        diagnostics,
+        selected_diagnostics,
         allow_unsafe=allow_unsafe,
         numpy_aliases=alias_visitor.by_assertion,
     )
@@ -403,8 +404,7 @@ def _is_safe_allclose(
 def _same_expression(left: cst.BaseExpression, right: cst.BaseExpression) -> bool:
     if not isinstance(left, cst.Name) or not isinstance(right, cst.Name):
         return False
-    module = cst.Module(body=[])
-    return module.code_for_node(left) == module.code_for_node(right)
+    return left.value == right.value
 
 
 def _is_numeric_literal(node: cst.BaseExpression) -> bool:

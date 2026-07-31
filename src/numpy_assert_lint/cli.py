@@ -83,6 +83,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 filename=str(path),
                 enabled_codes=enabled_codes,
                 allow_unsafe=arguments.unsafe_fixes,
+                diagnostics=diagnostics,
             )
             if fix_result.fixed_codes:
                 fixed_count = len(fix_result.fixed_codes)
