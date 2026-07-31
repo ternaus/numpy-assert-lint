@@ -7,8 +7,11 @@ import difflib
 import io
 import sys
 import tokenize
-from collections.abc import Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 from numpy_assert_lint import __version__
 from numpy_assert_lint.checker import check_source

@@ -77,7 +77,19 @@ line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]
-select = ["B", "C4", "E", "F", "I", "PERF", "PIE", "PT", "RUF", "SIM", "UP"]
+select = ["ALL"]
+ignore = [
+    "COM812", # Conflicts with the formatter.
+    "CPY001", # The project does not require copyright headers in every file.
+    "D203",   # Incompatible with D211.
+    "D213",   # Incompatible with D212.
+    "ISC001", # Conflicts with the formatter.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/numpy_assert_lint/cli.py" = ["C901", "PLR0912", "PLR0915"]
+"src/numpy_assert_lint/fixer.py" = ["N802", "PLR0911"]
+"tests/**/*.py" = ["D", "EM101", "INP001", "PLR2004", "S101", "TRY003"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["numpy_assert_lint"]
